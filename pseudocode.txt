@@ -1,0 +1,158 @@
+- Non-uniform mutation:
+  - delta = y * (1 - r ^ (1 - t/T)^b)
+          = allowed_value_for_change * (1 - (random_number ^ (1 - current_gen/max_gen)) ^ dependency_factor)
+  - current_gen increases ->  (1 - current_gen/max_gen) decreases
+                          ->  (random_number ^ (1 - current_gen/max_gen)) increases
+                          ->  (random_number ^ (1 - current_gen/max_gen)) ^ dependency_factor increases (#)
+                          ->  (1 - (random_number ^ (1 - current_gen/max_gen)) ^ dependency_factor) decreases
+                          ->  allowed_value_for_change * (1 - (random_number ^ (1
+                          - current_gen/max_gen)) ^ dependency_factor) decreases
+  - dependency_factor increases -> (#) increases -> sharper decrease by increasing current_gen
+
+- k = 0.95 * popSize
+- Elitism replacement
+  - (popSize - k) elites
+  - Put them in next generation which would be k individuals
+
+- Tournament selection
+  - Need k individuals
+  - Run k tournaments
+
+- createTournamentSelection(noTournaments):
+  - return (solutions):
+    - selected = []
+    - 1..noTournaments
+      - r1 = rand[0, len(solutions))
+      - r2 = r1
+      - while r2 == r1:
+        - r2 = rand[0..len(solutions))
+      - first = solutions[r1]
+      - second = solutions[r2]
+      - best = first.fitness > second.fitness ? first : second
+      - selected.append(best)
+
+- createCrossover(crossover_rate, noPoints)
+  return (parent1, parent2):
+    if rand[0, 1] > crossover_rate:
+      return parent1, parent2
+    l = len(parent1)
+    offspring1 = []
+    offspring2 = []
+    prev = 0 // 1-based indication of where I have stopped, initially with 0 because we still didn't start
+    for i = 1 .. noPoints:
+      p = rand[prev, l)
+      for j = prev + 1 .. p:
+        offspring1 += parent1[j - 1]
+        offspring2 += parent2[j - 1]
+      swap(parent1, parent2)
+      prev = p
+    for i = prev + 1 .. l:
+      offspring1 += parent1[i - 1]
+      offspring2 += parent2[i - 2]
+    return offspring1, offspring2
+
+- createMutation(dependency_factor, lb, ub, mutation_rate)
+  - return (chromosome):
+    - for i in 0 .. l - 1:
+      - if rand[0, 1] <= mutation_rate
+        - ri1 = rand[0, 1]
+        - left = ri1 <= 0.5
+        - y = left ? chromosome[i] - lb : ub - chromosome[i]
+        - delta = y * (1 - r ^ (1 - t/T) ^ dependency_factor)
+        - if left:
+          - chromosome[i] -= delta
+        - else
+          - chromosome[i] += delta
+
+# Length of a chromosome is the degree + 1
+
+- createInitializePopulation(lb, ub, degree, popSize):
+  - return ()
+    - population = []
+    - for i 1..popSize:
+      - chromosome = []
+      - for j 1..degree + 1:
+        - chromosome += randFloat[lb, ub]
+      - population += chromosome
+    - return population
+
+- createEvaluateFitness(points):
+  - return (chromosome):
+    - totalDeviation = 0
+    - for point in points:
+      - y = 0
+      - for i = 0..l-1
+        - y += chromosome[i] * point.x ^ i
+      - totalDeviation += (y - point.y) ^ 2
+    - return totalDeviation
+
+- createCreateSolutions(evaluateFitness)
+  - return (solutions):
+    - return [createSolution(i, evaluateFitness(i)) for i in solutions]
+
+- runGeneticAlgorithm(
+    initializePopulation,
+    createSolutions,
+    crossover,
+    mutation,
+    maxGen,
+    select,
+    k
+  ):
+  - population = initializePopulation()
+  - currentSolutions = createSolutions(population)
+  - sort(currentSolutions) # lowest to highest fitness
+  - for (i = 1..maxGen):
+    - s = select(currentSolutions)
+    - offsprings = []
+    - for j = 0..len(s)-2..+2
+      - offsprings += crossover(currentSolutions[j], currentSolutions[j + 1])
+    - offset = len(offsprings) - k
+    - while (offset--)
+      - removeLastElement(offsprings)
+    - for offspring in offsprings:
+      - mutation(offspring)
+    - elites = []
+    - for (j = 0..k-1)
+      - elites += currentSolutions[j]
+    - currentSolutions = createSolutions(offsprings) + elites
+    - sort(currentSolutions)
+  - return currentSolutions[0]
+
+- decodeChromosome(chromosome)
+  - decoded = ""
+  - for i = len(chromosome)-1..0
+    - if i == 0:
+      - decoded += chromosome[i]
+    - else
+      - decoded += "{chromosome[i]}x^{i}"
+  - return decoded
+
+- main()
+  - get noTestCases
+  - think of lb, ub, popSize, maxGen, k, crossoverRate, dependencyFactor, mutationRate
+  - for i = 1..noTestCases
+    - get noPoints, degree
+    - points = []
+    - for i = 1..noPoints:
+      - points += createPoint(getX, getY)
+    - initializePopulation = createInitializePopulation(lb, ub, degree, popSize)
+    - evaluateFitness = createEvaluateFitness(points)
+    - createSolutions = createCreateSolutions(evaluateFitness)
+    - select = createTournamentSelection(ceil(k / 2) * 2)
+    - crossover = createCrossover(crossoverRate, 2)
+    - mutation = createMutation(dependencyFactor, lb, ub, mutationRate)
+    - solution = runGeneticAlgorithm(
+      initializePopulation,
+      createSolutions,
+      crossover,
+      mutation,
+      maxGen,
+      select,
+      k
+    )
+    - decoded = decodeChromosome(solution)
+
+1 1 1 0 1 1 1 0
+   ^     ^
+1 0 1 1 0 0 1 0
