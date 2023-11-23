@@ -87,8 +87,8 @@
     - return totalDeviation
 
 - createCreateSolutions(evaluateFitness)
-  - return (solutions):
-    - return [createSolution(i, evaluateFitness(i)) for i in solutions]
+  - return (chromosomes):
+    - return [createSolution(i, evaluateFitness(i)) for i in chromosomes]
 
 - runGeneticAlgorithm(
     initializePopulation,
@@ -106,7 +106,7 @@
     - s = select(currentSolutions)
     - offsprings = []
     - for j = 0..len(s)-2..+2
-      - offsprings += crossover(currentSolutions[j], currentSolutions[j + 1])
+      - offsprings += crossover(s[j], s[j + 1])
     - offset = len(offsprings) - k
     - while (offset--)
       - removeLastElement(offsprings)
