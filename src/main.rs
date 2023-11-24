@@ -16,7 +16,7 @@ fn create_initialize_population(
     lb: f64,
     ub: f64,
     degree: u32,
-    pop_size: i32,
+    pop_size: u32,
 ) -> impl Fn() -> Vec<Chromosome> {
     move || {
         let mut population: Vec<Chromosome> = Vec::new();
@@ -183,6 +183,7 @@ fn run_genetic_algorithm(
     max_gen: u32,
     select: impl for<'a> Fn(&Vec<&'a Solution>) -> Vec<&'a Solution>,
     k: u32,
+    no_elites: u32,
     current_test_case: u32,
 ) -> Solution {
     let population = initialize_population();
@@ -205,13 +206,13 @@ fn run_genetic_algorithm(
 
         let offset = offsprings.len() as u32 - k;
         for _ in 1..=offset {
-            offsprings.pop();
+            offsprings.pop().unwrap();
         }
         for offspring in &mut offsprings {
             mutation(current_gen, offspring);
         }
         let mut elites: Vec<Solution> = Vec::new();
-        for _ in 1..=k {
+        for _ in 1..=no_elites {
             let solution = current_solutions.pop().unwrap();
             elites.push(solution);
         }
@@ -237,6 +238,8 @@ fn main() {
     let pop_size = 600;
     let max_gen = 300;
     let k = (0.95 * pop_size as f64).ceil() as u32;
+    let no_elites = pop_size - k;
+    println!("Number of elites: {}", no_elites);
     let crossover_rate = 0.7;
     let mutation_rate = 0.01;
     let dependency_factor = 2.5;
@@ -265,12 +268,13 @@ fn main() {
             max_gen,
             select,
             k,
+            no_elites,
             current_test_case,
         );
         println!(
             "Test case: {}
 Best solution: {}
-Fitness: {}",
+Sum of squared deviations: {}",
             current_test_case,
             decode_chromosome(&solution.chromosome),
             solution.fitness

@@ -113,7 +113,7 @@
     - for offspring in offsprings:
       - mutation(offspring)
     - elites = []
-    - for (j = 0..k-1)
+    - for (j = 0..no_elites-1)
       - elites += currentSolutions[j]
     - currentSolutions = createSolutions(offsprings) + elites
     - sort(currentSolutions)
