@@ -1,4 +1,5 @@
 use rand::{thread_rng, Rng};
+use text_io::scan;
 
 type Chromosome = Vec<f64>;
 struct Solution {
@@ -144,7 +145,7 @@ fn create_mutation(
 }
 
 fn create_create_solutions(
-    evaluate_fitness: fn(&Chromosome) -> f64,
+    evaluate_fitness: impl Fn(&Chromosome) -> f64,
 ) -> impl Fn(Vec<Chromosome>) -> Vec<Solution> {
     move |chromosomes| {
         let mut result: Vec<Solution> = Vec::new();
@@ -182,6 +183,7 @@ fn run_genetic_algorithm(
     max_gen: u32,
     select: impl for<'a> Fn(&Vec<&'a Solution>) -> Vec<&'a Solution>,
     k: u32,
+    current_test_case: u32,
 ) -> Solution {
     let population = initialize_population();
     let mut current_solutions = create_solutions(population);
@@ -216,8 +218,62 @@ fn run_genetic_algorithm(
         current_solutions = create_solutions(offsprings);
         current_solutions.append(&mut elites);
         current_solutions.sort_by(comparison_fn);
+
+        let best = &current_solutions[current_solutions.len() - 1];
+        eprintln!(
+            "Test case: {}
+Current generation: {}
+Best chromosome {:?}
+Best fitness: {}",
+            current_test_case, current_gen, best.chromosome, best.fitness
+        );
     }
     current_solutions.pop().unwrap()
 }
 
-fn main() {}
+fn main() {
+    let lb = -10_f64;
+    let ub = 10_f64;
+    let pop_size = 600;
+    let max_gen = 300;
+    let k = (0.95 * pop_size as f64).ceil() as u32;
+    let crossover_rate = 0.7;
+    let mutation_rate = 0.01;
+    let dependency_factor = 2.5;
+    let no_test_cases: u32;
+    scan!("{}", no_test_cases);
+    for current_test_case in 1..=no_test_cases {
+        let (no_points, degree): (u32, u32);
+        scan!("{} {}", no_points, degree);
+        let mut points = Vec::new();
+        for _ in 1..=no_points {
+            let (x, y): (f64, f64);
+            scan!("{} {}", x, y);
+            points.push(Point { x, y })
+        }
+        let initialize_population = create_initialize_population(lb, ub, degree, pop_size);
+        let evaluate_fitness = create_evaluate_fitness(&points);
+        let create_solutions = create_create_solutions(evaluate_fitness);
+        let select = create_tournament_selection(((k as f64 / 2.0).ceil() as u32) * 2);
+        let crossover = create_crossover(crossover_rate, 2);
+        let mutation = create_mutation(dependency_factor, lb, ub, mutation_rate, max_gen);
+        let solution = run_genetic_algorithm(
+            initialize_population,
+            create_solutions,
+            crossover,
+            mutation,
+            max_gen,
+            select,
+            k,
+            current_test_case,
+        );
+        println!(
+            "Test case: {}
+Best solution: {}
+Fitness: {}",
+            current_test_case,
+            decode_chromosome(&solution.chromosome),
+            solution.fitness
+        )
+    }
+}
