@@ -42,7 +42,7 @@ fn create_evaluate_fitness(points: &Vec<Point>) -> impl Fn(&Chromosome) -> f64 +
             }
             total_deviation += (y - point.y).powi(2);
         }
-        total_deviation
+        total_deviation / (points.len() as f64)
     }
 }
 
@@ -275,7 +275,7 @@ fn main() {
         println!(
             "Test case: {}
 Best solution: {}
-Sum of squared deviations: {}",
+Mean square error: {}",
             current_test_case,
             decode_chromosome(&solution.chromosome),
             solution.fitness
