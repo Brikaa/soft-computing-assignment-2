@@ -32,7 +32,7 @@ fn create_initialize_population(
 }
 
 fn create_evaluate_fitness(points: &Vec<Point>) -> impl Fn(&Chromosome) -> f64 + '_ {
-    move |chromosome: &Chromosome| {
+    move |chromosome| {
         let mut total_deviation = 0_f64;
         for point in points {
             let mut y = 0_f64;
@@ -48,7 +48,7 @@ fn create_evaluate_fitness(points: &Vec<Point>) -> impl Fn(&Chromosome) -> f64 +
 fn create_tournament_selection(
     no_tournaments: u32,
 ) -> impl for<'a> Fn(&Vec<&'a Solution>) -> Vec<&'a Solution> {
-    move |solutions: &Vec<&Solution>| {
+    move |solutions| {
         let mut selected: Vec<&Solution> = Vec::new();
         let mut rng = thread_rng();
         for _ in 1..=no_tournaments {
@@ -59,12 +59,11 @@ fn create_tournament_selection(
             }
             let first = solutions[r1];
             let second = solutions[r2];
-            let best: &Solution;
-            if first.fitness > second.fitness {
-                best = first;
+            let best = if first.fitness > second.fitness {
+                first
             } else {
-                best = second;
-            }
+                second
+            };
             selected.push(best);
         }
         selected
@@ -75,7 +74,7 @@ fn create_crossover(
     crossover_rate: f64,
     no_points: u32,
 ) -> impl Fn(&Chromosome, &Chromosome) -> (Chromosome, Chromosome) {
-    move |parent1: &Chromosome, parent2: &Chromosome| {
+    move |parent1, parent2| {
         let mut rng = thread_rng();
         if rng.gen::<f64>() > crossover_rate {
             return (parent1.clone(), parent2.clone());
@@ -116,7 +115,7 @@ fn create_mutation(
     mutation_rate: f64,
     max_gen: u32,
 ) -> impl Fn(u32, &mut Chromosome) {
-    move |current_gen: u32, chromosome: &mut Chromosome| {
+    move |current_gen, chromosome| {
         let mut rng = thread_rng();
         let l = chromosome.len();
         for i in 0..l {
@@ -175,8 +174,6 @@ fn decode_chromosome(chromosome: &Chromosome) -> String {
     result
 }
 
-
-
 fn run_genetic_algorithm(
     initialize_population: impl Fn() -> Vec<Chromosome>,
     create_solutions: impl Fn(Vec<Chromosome>) -> Vec<Solution>,
@@ -188,7 +185,8 @@ fn run_genetic_algorithm(
 ) -> Solution {
     let population = initialize_population();
     let mut current_solutions = create_solutions(population);
-    current_solutions.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
+    let comparison_fn = |a: &Solution, b: &Solution| b.fitness.partial_cmp(&a.fitness).unwrap();
+    current_solutions.sort_by(comparison_fn);
     for current_gen in 1..=max_gen {
         let mut solution_refs = Vec::new();
         for sol in &current_solutions {
@@ -215,14 +213,11 @@ fn run_genetic_algorithm(
             let solution = current_solutions.pop().unwrap();
             elites.push(solution);
         }
-
         current_solutions = create_solutions(offsprings);
         current_solutions.append(&mut elites);
-        current_solutions.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
+        current_solutions.sort_by(comparison_fn);
     }
     current_solutions.pop().unwrap()
 }
 
-fn main() {
-
-}
+fn main() {}
