@@ -1,0 +1,2 @@
+#!/bin/bash
+cargo run -- < curve_fitting_input.txt > out.txt
