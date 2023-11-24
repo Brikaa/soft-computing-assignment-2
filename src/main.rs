@@ -241,7 +241,7 @@ fn main() {
     let max_gen = 300;
     let k = (0.95 * pop_size as f64).ceil() as u32;
     let no_elites = pop_size - k;
-    let crossover_rate = 0.7;
+    let crossover_rate = 0.9;
     let mutation_rate = 0.03;
     let dependency_factor = 2.5;
     let no_test_cases: u32;
