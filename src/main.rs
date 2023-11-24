@@ -1,8 +1,8 @@
 use rand::{thread_rng, Rng};
 
 type Chromosome = Vec<f64>;
-struct Solution<'a> {
-    chromosome: &'a Vec<f64>,
+struct Solution {
+    chromosome: Chromosome,
     fitness: f64,
 }
 
@@ -45,9 +45,9 @@ fn create_evaluate_fitness(points: &Vec<Point>) -> impl Fn(&Chromosome) -> f64 +
     }
 }
 
-fn create_tournament_selection<'a>(
+fn create_tournament_selection(
     no_tournaments: u32,
-) -> impl Fn(&Vec<&'a Solution>) -> Vec<&'a Solution<'a>> {
+) -> impl for<'a> Fn(&Vec<&'a Solution>) -> Vec<&'a Solution> {
     move |solutions: &Vec<&Solution>| {
         let mut selected: Vec<&Solution> = Vec::new();
         let mut rng = thread_rng();
@@ -146,13 +146,14 @@ fn create_mutation(
 
 fn create_create_solutions(
     evaluate_fitness: fn(&Chromosome) -> f64,
-) -> impl Fn(&Vec<Chromosome>) -> Vec<Solution> {
-    move |chromosomes: &Vec<Chromosome>| {
+) -> impl Fn(Vec<Chromosome>) -> Vec<Solution> {
+    move |chromosomes| {
         let mut result: Vec<Solution> = Vec::new();
         for chromosome in chromosomes {
+            let fitness = evaluate_fitness(&chromosome);
             result.push(Solution {
                 chromosome,
-                fitness: evaluate_fitness(chromosome),
+                fitness,
             });
         }
         result
@@ -174,49 +175,20 @@ fn decode_chromosome(chromosome: &Chromosome) -> String {
     result
 }
 
-/*
-- runGeneticAlgorithm(
-    initializePopulation,
-    createSolutions,
-    crossover,
-    mutation,
-    maxGen,
-    select,
-    k
-  ):
-  - population = initializePopulation()
-  - currentSolutions = createSolutions(population)
-  - sort(currentSolutions) # lowest to highest fitness
-  - for (i = 1..maxGen):
-    - s = select(currentSolutions)
-    - offsprings = []
-    - for j = 0..len(s)-2..+2
-      - offsprings += crossover(s[j], s[j + 1])
-    - offset = len(offsprings) - k
-    - while (offset--)
-      - removeLastElement(offsprings)
-    - for offspring in offsprings:
-      - mutation(offspring)
-    - elites = []
-    - for (j = 0..k-1)
-      - elites += currentSolutions[j]
-    - currentSolutions = createSolutions(offsprings) + elites
-    - sort(currentSolutions)
-  - return currentSolutions[0]
 
-*/
+
 fn run_genetic_algorithm(
-    initialize_population: fn() -> Vec<Chromosome>,
-    create_solutions: fn(&Vec<Chromosome>) -> Vec<Solution>,
-    crossover: fn(&Chromosome, &Chromosome) -> (Chromosome, Chromosome),
-    mutation: fn(u32, &mut Chromosome),
+    initialize_population: impl Fn() -> Vec<Chromosome>,
+    create_solutions: impl Fn(Vec<Chromosome>) -> Vec<Solution>,
+    crossover: impl Fn(&Chromosome, &Chromosome) -> (Chromosome, Chromosome),
+    mutation: impl Fn(u32, &mut Chromosome),
     max_gen: u32,
-    select: for<'a> fn(&Vec<&'a Solution>) -> Vec<&'a Solution<'a>>,
+    select: impl for<'a> Fn(&Vec<&'a Solution>) -> Vec<&'a Solution>,
     k: u32,
-) -> Solution<'static> {
+) -> Solution {
     let population = initialize_population();
-    let mut current_solutions = create_solutions(&population);
-    current_solutions.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
+    let mut current_solutions = create_solutions(population);
+    current_solutions.sort_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap());
     for current_gen in 1..=max_gen {
         let mut solution_refs = Vec::new();
         for sol in &current_solutions {
@@ -226,10 +198,11 @@ fn run_genetic_algorithm(
         let mut offsprings: Vec<Chromosome> = Vec::new();
         for i in (0..selected.len()).step_by(2) {
             let (offspring1, offspring2) =
-                crossover(selected[i].chromosome, selected[i + 1].chromosome);
+                crossover(&selected[i].chromosome, &selected[i + 1].chromosome);
             offsprings.push(offspring1);
             offsprings.push(offspring2);
         }
+
         let offset = offsprings.len() as u32 - k;
         for _ in 1..=offset {
             offsprings.pop();
@@ -237,19 +210,19 @@ fn run_genetic_algorithm(
         for offspring in &mut offsprings {
             mutation(current_gen, offspring);
         }
-        let mut elites: Vec<&Solution> = Vec::new();
-        for i in 0..k {
-            elites.push(&current_solutions[i as usize]);
+        let mut elites: Vec<Solution> = Vec::new();
+        for _ in 1..=k {
+            let solution = current_solutions.pop().unwrap();
+            elites.push(solution);
         }
-        current_solutions = create_solutions(&offsprings);
-        let mut solution2_refs = Vec::new();
-        for sol in &current_solutions {
-            solution2_refs.push(sol);
-        }
-        solution2_refs.append(&mut elites);
+
+        current_solutions = create_solutions(offsprings);
+        current_solutions.append(&mut elites);
         current_solutions.sort_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
     }
-    current_solutions[0]
+    current_solutions.pop().unwrap()
 }
 
-fn main() {}
+fn main() {
+
+}

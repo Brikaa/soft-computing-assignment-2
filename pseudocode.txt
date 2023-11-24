@@ -101,7 +101,7 @@
   ):
   - population = initializePopulation()
   - currentSolutions = createSolutions(population)
-  - sort(currentSolutions) # lowest to highest fitness
+  - sort(currentSolutions) # highest to lowest fitness
   - for (i = 1..maxGen):
     - s = select(currentSolutions)
     - offsprings = []
