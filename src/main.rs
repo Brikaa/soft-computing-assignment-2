@@ -83,27 +83,29 @@ fn create_crossover(
         let l = parent1.len();
         let mut offspring1: Chromosome = Vec::new();
         let mut offspring2: Chromosome = Vec::new();
+        let mut points = Vec::new();
+        for _ in 1..=no_points {
+            let p = rng.gen_range(1..l);
+            points.push(p);
+        }
+        points.sort();
         let mut prev = 0;
-        for i in 1..=no_points {
-            let p = rng.gen_range(prev..l);
-            for j in prev + 1..=p {
-                let a;
-                let b;
-                if i % 2 == 0 {
-                    a = parent1;
-                    b = parent2;
-                } else {
-                    a = parent2;
-                    b = parent1;
-                }
+        let mut a = parent1;
+        let mut b = parent2;
+        for i in 1..=points.len() {
+            let p = points[i - 1];
+            for j in (prev + 1)..=p {
                 offspring1.push(a[j - 1]);
                 offspring2.push(b[j - 1]);
+                let temp = a;
+                a = b;
+                b = temp;
             }
             prev = p;
         }
         for i in prev + 1..=l {
-            offspring1.push(parent1[i - 1]);
-            offspring2.push(parent2[i - 1]);
+            offspring1.push(a[i - 1]);
+            offspring2.push(b[i - 1]);
         }
         (offspring1, offspring2)
     }
@@ -239,7 +241,6 @@ fn main() {
     let max_gen = 300;
     let k = (0.95 * pop_size as f64).ceil() as u32;
     let no_elites = pop_size - k;
-    println!("Number of elites: {}", no_elites);
     let crossover_rate = 0.7;
     let mutation_rate = 0.01;
     let dependency_factor = 2.5;
