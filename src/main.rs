@@ -60,7 +60,7 @@ fn create_tournament_selection(
             }
             let first = solutions[r1];
             let second = solutions[r2];
-            let best = if first.fitness > second.fitness {
+            let best = if first.fitness < second.fitness {
                 first
             } else {
                 second
@@ -239,10 +239,10 @@ fn main() {
     let ub = 10_f64;
     let pop_size = 600;
     let max_gen = 300;
-    let k = (0.98 * pop_size as f64).ceil() as u32;
+    let k = (0.95 * pop_size as f64).ceil() as u32;
     let no_elites = pop_size - k;
     let crossover_rate = 0.7;
-    let mutation_rate = 0.7;
+    let mutation_rate = 0.03;
     let dependency_factor = 2.5;
     let no_test_cases: u32;
     scan!("{}", no_test_cases);
