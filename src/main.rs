@@ -237,8 +237,8 @@ Best fitness: {}",
 fn main() {
     let lb = -10_f64;
     let ub = 10_f64;
-    let pop_size = 800;
-    let max_gen = 400;
+    let pop_size = 2500;
+    let max_gen = 1200;
     let k = (0.95 * pop_size as f64).ceil() as u32;
     let no_elites = pop_size - k;
     let crossover_rate = 0.9;

@@ -1,2 +1,2 @@
 #!/bin/bash
-cargo run -- < curve_fitting_input.txt > out.txt
+cargo run --release -- < curve_fitting_input.txt > out.txt
