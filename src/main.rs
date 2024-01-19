@@ -132,10 +132,9 @@ fn create_mutation(
                 };
                 let delta = y
                     * (1_f64
-                        - rng
-                            .gen::<f64>()
-                            .powf(1_f64 - current_gen as f64 / max_gen as f64)
-                            .powf(dependency_factor));
+                        - rng.gen::<f64>().powf(
+                            (1_f64 - current_gen as f64 / max_gen as f64).powf(dependency_factor),
+                        ));
                 if left {
                     chromosome[i] -= delta;
                 } else {
@@ -223,13 +222,15 @@ fn run_genetic_algorithm(
         current_solutions.sort_by(comparison_fn);
 
         let best = &current_solutions[current_solutions.len() - 1];
-        eprintln!(
-            "Test case: {}
+        if current_gen == max_gen || current_gen % (max_gen / 3) == 0 {
+            eprintln!(
+                "Test case: {}
 Current generation: {}
 Best chromosome {:?}
 Best fitness: {}",
-            current_test_case, current_gen, best.chromosome, best.fitness
-        );
+                current_test_case, current_gen, best.chromosome, best.fitness
+            );
+        }
     }
     current_solutions.pop().unwrap()
 }
